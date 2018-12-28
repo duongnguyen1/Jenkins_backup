@@ -1,0 +1,631 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <displayName>Auto_build_firmware_branch_Autobuild</displayName>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>PR_CONFIG_FILE</name>
+          <description>file path for project config file</description>
+          <defaultValue>C:\Jenkins_WP\Sources\Configs\config\config.h</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>JLINK_DEVICE_NAME_DIANA</name>
+          <description>MCU Part Number</description>
+          <defaultValue>AMAPH1KK-KCR</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>JLINK_CMD_FILE</name>
+          <description>C:\Jenkins_WP\auto_build.jlink</description>
+          <defaultValue>C:\Jenkins_WP\auto_build.jlink</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>JLINK_DIANA_SN</name>
+          <description>Segger SN</description>
+          <defaultValue>164204336</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DONGLE_COMM_PORT</name>
+          <description>USB Dongle</description>
+          <defaultValue>COM8</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DUT_ADDRESS_DIANA</name>
+          <description></description>
+          <defaultValue>E1188190EC34</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>JLINK_CMD_FILE_BOOTLOADER</name>
+          <description>C:\Jenkins_WP\auto_build_bld.jlink</description>
+          <defaultValue>C:\Jenkins_WP\auto_build_bld.jlink</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.1">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>git@github.com:Misfit-Wearables/DIANA-FW-NEWARC.git</url>
+        <credentialsId>ef49cad4-61a5-4b01-8e1b-77a47f8f0c73</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>origin/personal/DuongNguyen/Autobuild</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.CleanBeforeCheckout/>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <customWorkspace>c:\Jenkins_WP</customWorkspace>
+  <builders>
+    <hudson.tasks.BatchFile>
+      <command>net use e: \\10.166.1.3\download2 /Persistent:yes /user:WORKGROUP\fossil User@123&#xd;
+e:&#xd;
+ls&#xd;
+net use</command>
+    </hudson.tasks.BatchFile>
+    <hudson.plugins.python.Python plugin="python@1.3">
+      <command>import os, sys, shutil, subprocess, time, json, re
+import logging
+import codecs
+
+def unlocked_config_h():
+  DIANA_CFG_FILE= os.environ[&apos;PR_CONFIG_FILE&apos;]
+  logging.info(&apos; Unlock Debug allow program MCU via J-Link&apos;)
+  cfg = DIANA_CFG_FILE
+  open_file_cfg = open(cfg,&apos;r&apos;)
+  read_file_cfg = open_file_cfg.read()
+ 
+
+  config_h_unlocked  = read_file_cfg.replace(&apos;#define CONFIG_ENABLE_DEBUGGER_MODE               (0)&apos;, &apos;#define CONFIG_ENABLE_DEBUGGER_MODE               (1)&apos;)
+  open_file_cfg.close()  	
+  new_cfg = DIANA_CFG_FILE
+  
+  open_new_file_cfg = open(new_cfg,&apos;w&apos;)
+
+  open_new_file_cfg.write(config_h_unlocked)
+  open_new_file_cfg.close()
+
+  logging.info(&apos; Unlock Debug Done&apos;)
+  return 0
+if __name__==&apos;__main__&apos;:
+  unlocked_config_h()
+  exit(0) # module has executed successfully
+  </command>
+    </hudson.plugins.python.Python>
+    <hudson.plugins.python.Python plugin="python@1.3">
+      <command>import os, sys, shutil, subprocess, time, json, re
+import logging
+import codecs
+REPO_DIANA                  = os.path.join(&apos;C:/&apos;,&apos;Jenkins_WP&apos;)
+BINARY_FOLDER_DIANA         = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;build_outputs&apos;, &apos;Exe&apos;)
+LATEST_BINARY_FOLDER_DIANA  = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;post_build_outputs&apos;, &apos;_Latest_Named_Binaries&apos;)
+#REPO_DIANA
+TARGET_FILE_DIANA           = os.path.join(BINARY_FOLDER_DIANA,&apos;Diana.hex&apos;)
+TARGET_FILE_DIANA           = os.path.join(BINARY_FOLDER_DIANA,&apos;Diana.hex&apos;)
+JLINKCMDFILE                = os.environ[&apos;JLINK_CMD_FILE&apos;]
+JLINKCMDFILEBLD             = os.environ[&apos;JLINK_CMD_FILE_BOOTLOADER&apos;]
+TARGET_FILE_DIANA_BOOT_LOADER = os.path.join(REPO_DIANA,&apos;Releases&apos;,&apos;GeneratedFw&apos;,&apos;BootloaderCombine&apos;,&apos;bootloader_combine.hex&apos;)
+
+
+def create_jlink_file():
+
+  jlink_script = r&apos;&apos;&apos;
+sleep 100
+r
+loadfile %s
+sleep 100
+
+r
+g
+exit
+&apos;&apos;&apos; % TARGET_FILE_DIANA
+
+  with open(JLINKCMDFILE,&apos;w&apos;) as f: 
+    f.write(jlink_script)
+    f.close()
+  return 0
+######################################
+def create_jlink_bootloader_file():
+
+  jlink_script = r&apos;&apos;&apos;
+sleep 100
+r
+loadfile %s
+sleep 100
+
+r
+g
+exit
+&apos;&apos;&apos; % TARGET_FILE_DIANA_BOOT_LOADER
+
+  with open(JLINKCMDFILEBLD,&apos;w&apos;) as f: 
+    f.write(jlink_script)
+    f.close()
+  return 0
+#####################################
+if __name__==&apos;__main__&apos;:
+  create_jlink_file()
+  create_jlink_bootloader_file()
+  exit(0) # module has executed successfully
+  
+</command>
+    </hudson.plugins.python.Python>
+    <hudson.tasks.Shell>
+      <command>ls
+cd &quot;Projects\Diana&quot;
+ls
+&quot;C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\IarBuild.exe&quot; Diana.ewp -build Diana -log errors -log warnings -parallel 4ewp -build Diana -log errors -log warnings -parallel 4</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>ls
+&quot;C:\Program Files (x86)\SEGGER\JLink_V622a\JLink.exe&quot; -autoconnect 1 -device AMAPH1KK-KCR -if SWD -speed 4000 -CommanderScript auto_build_bld.jlink -SelectEmuBySN ${JLINK_DIANA_SN}
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>ls
+&quot;C:\Program Files (x86)\SEGGER\JLink_V622a\JLink.exe&quot; -autoconnect 1 -device AMAPH1KK-KCR -if SWD -speed 4000 -CommanderScript auto_build.jlink -SelectEmuBySN ${JLINK_DIANA_SN}
+</command>
+    </hudson.tasks.Shell>
+    <hudson.plugins.python.Python plugin="python@1.3">
+      <command>import os, sys, shutil, subprocess, time, json, re
+import logging
+import smtplib
+import codecs
+
+try:
+  import serial
+except Exception:
+  try: # try to self install the missing module
+    from pip._internal import main as pip_main
+    pip_main([&apos;install&apos;, &apos;pyserial&apos;])
+    import serial
+  except Exception:
+    print(&apos;Cannot install the PySerial module&apos;)
+    pass
+
+logging.basicConfig(
+  level=logging.DEBUG,
+  format=&quot;%(asctime)s - %(message)s&quot;,
+  handlers=[
+      logging.StreamHandler(sys.stdout),
+  ])
+  
+json_data   = {}
+date        = time.strftime(&apos;%Y-%m-%d %H:%M:%S %z&apos;, time.localtime())
+start_time  = time.time()
+
+  
+def ble_read_char_value(ser, conn_handle, char_handle):
+  
+  data = bytes()
+  conn_handle_byte = conn_handle.to_bytes(2, byteorder=&apos;little&apos;)
+  char_handle_byte = char_handle.to_bytes(2, byteorder=&apos;little&apos;)
+
+  # GATT_ReadLongCharDesc
+  ser.write(bytes.fromhex(&apos;01 BE FD 06&apos;) + conn_handle_byte + char_handle_byte + b&apos;\x00\x00&apos;)
+
+  if ser.read(9) !=  b&apos;\x04\xff\x06\x7f\x06\x00\xbe\xfd\x00&apos;:
+    logging.warning(&apos;command GATT_ReadLongCharDesc respond is not OK&apos;)
+    return 1
+
+  max_loop_count = 50
+  while(max_loop_count):
+    max_loop_count = max_loop_count - 1
+
+    # parsing the returned value
+    read_byte = ser.read(3)  # first 3 bytes indicate the length of the respond
+    res_byte = ser.read(read_byte[2]) # read_byte[2] is the length of the rest payload
+
+    event = res_byte[0:2]
+    status = res_byte[2:3]
+
+    if event == b&apos;\x0D\x05&apos;:  # ATT_ReadBlobRsp
+      if status == b&apos;\x1a&apos;:   # respond status 0x1A (26) (The Procedure Is Completed)
+        return data
+      elif status == b&apos;\x00&apos;: # respond status 0x00 (Success)
+        data += res_byte[6:]
+
+  return 0
+
+
+def ble_read_char_value_diana(ser, conn_handle, char_handle):
+  
+  data = bytes()
+  conn_handle_byte = conn_handle.to_bytes(2, byteorder=&apos;little&apos;)
+  char_handle_byte = char_handle.to_bytes(2, byteorder=&apos;little&apos;)
+
+  # GATT_ReadLongCharDesc
+  ser.write(bytes.fromhex(&apos;01 BE FD 06&apos;) + conn_handle_byte + char_handle_byte + b&apos;\x00\x00&apos;)
+
+  if ser.read(9) !=  b&apos;\x04\xff\x06\x7f\x06\x00\xbe\xfd\x00&apos;:
+    logging.warning(&apos;command GATT_ReadLongCharDesc respond is not OK&apos;)
+    return 1
+
+  max_loop_count = 50
+  while(max_loop_count):
+    max_loop_count = max_loop_count - 1
+
+    # parsing the returned value
+    read_byte = ser.read(3)  # first 3 bytes indicate the length of the respond
+    res_byte = ser.read(read_byte[2]) # read_byte[2] is the length of the rest payload
+
+    event = res_byte[0:2]
+    status = res_byte[2:3]
+
+    if event == b&apos;\x0D\x05&apos;:  # ATT_ReadBlobRsp
+      if status == b&apos;\x1a&apos;:   # respond status 0x1A (26) (The Procedure Is Completed)
+        return data
+      elif status == b&apos;\x00&apos;: # respond status 0x00 (Success)
+        data += res_byte[6:]
+
+  return None
+
+
+def test_connection_diana(device_addr=None):
+  &apos;&apos;&apos;
+  Using the external BLE dongle to try to connect with the device
+  The command data is hard code
+
+  Return the firmware_revision_value if possible, None if fail
+  &apos;&apos;&apos;
+
+  logging.info(&apos;Test connection&apos;)
+  with serial.Serial(port=os.environ[&apos;DONGLE_COMM_PORT&apos;], baudrate=115200, timeout=5) as ser:
+
+    # GAP_DeviceInit
+    ser.write(bytes.fromhex(&apos;01 00 FE 26 08 05 00 00 00 00 00 00 00 00 00 00 &apos;
+                            &apos;00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 &apos;
+                            &apos;00 00 00 00 00 00 01 00 00 00&apos;))
+    
+
+    if ser.read(9) != b&apos;\x04\xff\x06\x7f\x06\x00\x00\xfe\x00&apos;:
+      logging.warning(&apos;command GAP_DeviceInit respond is not OK&apos;)
+      return 1
+    
+    ser.read(47) # wait for GAP_DeviceInit done event
+    ser.write(bytes.fromhex(&apos;01 31 FE 01 1A&apos;))
+    time.sleep(0.1)
+    ser.write(bytes.fromhex(&apos;01 31 FE 01 19&apos;))
+    time.sleep(0.1)
+    logging.info(ser.read(11))
+    ser.write(bytes.fromhex(&apos;01 31 FE 01 16&apos;))
+    time.sleep(0.1)
+    logging.info(ser.read(11))
+    logging.info(&apos;Init Dongle Done&apos;)
+    logging.info(&apos;Termiate all Connection&apos;)
+    ser.write(bytes.fromhex(&apos;01 0A FE 03 FE FF 13&apos;))
+    time.sleep(0.5)
+    logging.info(ser.read(40))
+    ser.write(bytes.fromhex(&apos;01 0A FE 03 FF FF 13&apos;))
+    time.sleep(0.5)
+    logging.info(ser.read(40))
+    logging.info(&apos;Termiate all Connection done&apos;)
+
+    ser.write(bytes.fromhex(&apos;01 09 FE 09 00 00 00&apos;) + bytes(reversed(bytes.fromhex(device_addr))))
+
+    if ser.read(9) != b&apos;\x04\xff\x06\x7f\x06\x00\t\xfe\x00&apos;:
+      logging.warning(&apos;command GAP_EstablishLinkRequest respond is not OK&apos;)
+      raise
+    if ser.read(23) != b&apos;\x04\xff\x14\x05\x06\x00\x00&apos; + bytes(reversed(bytes.fromhex(device_addr))) + b&apos;\x00\x00\x08P\x00\x00\x00\xd0\x07\x00&apos;:
+      logging.warning(&apos;link established event is not OK&apos;)
+      raise
+
+    # The device may request security right after the connection is established
+    # may received GAP_SlaveRequestedSecurity event but not require
+    if ser.read(15) !=  b&apos;\x04\xff\x0c\x0c\x06\x00\x00\x00o\xf4\x90\x81\x18\xe1\x01&apos;:
+      pass
+
+    firmware_revision_value = ble_read_char_value(ser, 0x0000,0x002a).decode(&apos;ascii&apos;)
+    logging.info(&apos;Read firmware_revision_value = &apos; + firmware_revision_value)
+
+    ser.write(bytes.fromhex(&apos;01 0A FE 03 00 00 13&apos;)) # remote user terminates the connection
+
+    if ser.read(9) !=  b&apos;\x04\xff\x06\x7f\x06\x00\n\xfe\x00&apos;:
+      logging.warning(&apos;command GAP_TerminateLinkRequest respond is not OK&apos;)
+      return 1
+    if ser.read(9) != b&apos;\x04\xff\x06\x06\x06\x00\x00\x00\x16&apos;:
+      logging.warning(&apos;command GAP_TerminateLink respond is not OK&apos;)
+      return 1
+
+    return firmware_revision_value
+  return 1
+######################################################################
+
+def collect_file_diana(fw_rev):
+  &apos;&apos;&apos;
+  This routine is to copy the firmware binary to to_path 
+  and return the info of the firmware
+  
+  &apos;&apos;&apos;
+  &apos;&apos;&apos;
+  This routine is to copy the firmware binary to to_path 
+  and return the info of the firmware
+  &apos;&apos;&apos;
+  REPO_DIANA                  = os.path.join(&apos;C:/&apos;,&apos;Jenkins_WP&apos;)
+  BINARY_FOLDER_DIANA         = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;build_outputs&apos;, &apos;Exe&apos;)
+  LATEST_BINARY_FOLDER_DIANA  = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;post_build_outputs&apos;, &apos;_Latest_Named_Binaries&apos;)
+
+  IAR_CONFIGURATION   = &apos;Diana&apos; # the main build configuration of the Diana project
+  TARGET_FOLDER       = os.path.join(&apos;c:\\&apos;,&apos;firmwares&apos;)
+  TARGET_FOLDER_GG    = os.path.join(&apos;c:\\&apos;,&apos;Users&apos;,&apos;FW-FS-VN&apos;,&apos;Google Drive&apos;) #C:\Users\FW-FS-VN\Google Drive
+  #F:\fw_download\download
+  TARGET_FOLDER_DIANA = &apos;e:\\&apos;
+
+  to_path = TARGET_FOLDER
+  # get the firmware info in the name of a file in the binary folder
+  # using the regex to extract the captured group 1 = time stamp, group 2 = firmware name
+  _info = re.match(IAR_CONFIGURATION + r&quot;_\w{3}_(\d{8}_[^_]+)_([^_]+)&quot;, os.listdir(LATEST_BINARY_FOLDER_DIANA)[0])
+  
+
+  # test if the rev is matched
+  if fw_rev not in _info.group(2):
+    logging.warning(&apos;The fw rev is not matched with the bin file&apos;)
+    raise
+
+  _dir = os.path.join(to_path, fw_rev + &apos;_&apos; + _info.group(1))
+  logging.info(_dir)
+
+  # get the firmware info in the name of a file in the binary folder
+  # using the regex to extract the captured group 1 = time stamp, group 2 = firmware name
+  logging.info(&apos;collect_file_debug&apos;)
+  logging.info(&apos;LATEST_BINARY_FOLDER_DIANA-&gt;&gt;&apos; + os.listdir(LATEST_BINARY_FOLDER_DIANA)[0])
+  fw_rev_ota = os.listdir(LATEST_BINARY_FOLDER_DIANA)[0]
+  logging.info(&apos;fw_rev_ota-&gt;&gt;&apos; + fw_rev_ota)
+  logging.info(&apos;_info-&gt;&gt;&apos; + _info.group(2))
+  # test if the rev is matched
+  if fw_rev not in _info.group(2):
+    logging.warning(&apos;The fw rev is not matched with the bin file&apos;)
+    raise
+  _dir = os.path.join(to_path, fw_rev + &apos;_&apos; + _info.group(1))
+  logging.info(&apos;_dir-&gt;&gt;&apos; + _dir)
+  logging.info(LATEST_BINARY_FOLDER_DIANA)
+  _file = os.path.join(LATEST_BINARY_FOLDER_DIANA, fw_rev_ota)
+  logging.info(_file)
+  if os.path.exists(_dir): shutil.rmtree(_dir)
+  shutil.copytree(LATEST_BINARY_FOLDER_DIANA, _dir)
+  logging.info(_file)
+  logging.info(TARGET_FOLDER_DIANA)
+  shutil.copy(_file, TARGET_FOLDER_DIANA)
+  #shutil.copy(_file, REPO_VAL) # Copy firmware to val_automation repo to commit
+  return {&apos;timestamp&apos; : _info.group(1), &apos;dir&apos; : _dir}
+
+
+######################################################################
+if __name__==&apos;__main__&apos;:
+  time.sleep(60)
+  DUT_ADDRESS_DIANA = os.environ[&apos;DUT_ADDRESS_DIANA&apos;]
+  response = test_connection_diana(DUT_ADDRESS_DIANA)
+  if response == 1 :
+    raise
+##log build    
+  time_lapse = time.time() - start_time
+  json_data.update({&apos;Read Firmeare version via BLE&apos;:response, &apos;date&apos;: date, &apos;duration&apos;: time_lapse})
+  json_str = json.dumps(json_data, indent=4, sort_keys=True)
+  with open(os.path.join(&apos;C:/&apos;,&apos;Jenkins_WP&apos;,&apos;build.json&apos;), &apos;a&apos;) as f:
+    f.write(json_str)
+## collect file to special folders 
+  ble_firmware_version = str(response)
+  file_to_write= open(&apos;./ble_fw.txt&apos;,&apos;w&apos;)
+  file_to_write.write(ble_firmware_version)
+  file_to_write.close()
+##  os.environ[&quot;READ_BLE_FW_VER&quot;]=str(ble_firmware_version)
+## collect_file_diana(ble_firmware_version)
+  exit(0) # module has executed successfully
+</command>
+    </hudson.plugins.python.Python>
+    <hudson.plugins.python.Python plugin="python@1.3">
+      <command>import os, sys, shutil, subprocess, time, json, re
+import logging
+import codecs
+
+def unlocked_config_h():
+  DIANA_CFG_FILE= os.environ[&apos;PR_CONFIG_FILE&apos;]
+  logging.info(&apos; Unlock Debug allow program MCU via J-Link&apos;)
+  cfg = DIANA_CFG_FILE
+  open_file_cfg = open(cfg,&apos;r&apos;)
+  read_file_cfg = open_file_cfg.read()
+ 
+
+  config_h_unlocked  = read_file_cfg.replace(&apos;#define CONFIG_ENABLE_DEBUGGER_MODE               (1)&apos;, &apos;#define CONFIG_ENABLE_DEBUGGER_MODE               (0)&apos;)
+  open_file_cfg.close()  	
+  new_cfg = DIANA_CFG_FILE
+  
+  open_new_file_cfg = open(new_cfg,&apos;w&apos;)
+
+  open_new_file_cfg.write(config_h_unlocked)
+  open_new_file_cfg.close()
+
+  logging.info(&apos; Unlock Debug Done&apos;)
+  return 0
+if __name__==&apos;__main__&apos;:
+  unlocked_config_h()
+  exit(0) # module has executed successfully</command>
+    </hudson.plugins.python.Python>
+    <hudson.tasks.Shell>
+      <command>ls
+cd &quot;Projects\Diana&quot;
+ls
+&quot;C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\IarBuild.exe&quot; Diana.ewp -build Diana -log errors -log warnings -parallel 4ewp -build Diana -log errors -log warnings -parallel 4</command>
+    </hudson.tasks.Shell>
+    <hudson.plugins.python.Python plugin="python@1.3">
+      <command>import os, sys, shutil, subprocess, time, json, re
+import logging
+import smtplib
+import codecs
+
+try:
+  import serial
+except Exception:
+  try: # try to self install the missing module
+    from pip._internal import main as pip_main
+    pip_main([&apos;install&apos;, &apos;pyserial&apos;])
+    import serial
+  except Exception:
+    print(&apos;Cannot install the PySerial module&apos;)
+    pass
+
+logging.basicConfig(
+  level=logging.DEBUG,
+  format=&quot;%(asctime)s - %(message)s&quot;,
+  handlers=[
+      logging.StreamHandler(sys.stdout),
+  ])
+  
+json_data   = {}
+date        = time.strftime(&apos;%Y-%m-%d %H:%M:%S %z&apos;, time.localtime())
+start_time  = time.time()
+
+def collect_file_diana(fw_rev):
+  &apos;&apos;&apos;
+  This routine is to copy the firmware binary to to_path 
+  and return the info of the firmware
+  
+  &apos;&apos;&apos;
+  &apos;&apos;&apos;
+  This routine is to copy the firmware binary to to_path 
+  and return the info of the firmware
+  &apos;&apos;&apos;
+  REPO_DIANA                  = os.path.join(&apos;C:/&apos;,&apos;Jenkins_WP&apos;)
+  BINARY_FOLDER_DIANA         = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;build_outputs&apos;, &apos;Exe&apos;)
+  LATEST_BINARY_FOLDER_DIANA  = os.path.join(REPO_DIANA, &apos;Projects&apos;, &apos;Diana&apos;, &apos;post_build_outputs&apos;, &apos;_Latest_Named_Binaries&apos;)
+
+  IAR_CONFIGURATION   = &apos;Diana&apos; # the main build configuration of the Diana project
+  TARGET_FOLDER       = os.path.join(&apos;c:\\&apos;,&apos;firmwares&apos;)
+  TARGET_FOLDER_GG    = os.path.join(&apos;c:\\&apos;,&apos;Users&apos;,&apos;FW-FS-VN&apos;,&apos;Google Drive&apos;) #C:\Users\FW-FS-VN\Google Drive
+  #F:\fw_download\download
+  TARGET_FOLDER_DIANA = &apos;e:\\&apos;
+
+  to_path = TARGET_FOLDER
+  # get the firmware info in the name of a file in the binary folder
+  # using the regex to extract the captured group 1 = time stamp, group 2 = firmware name
+  _info = re.match(IAR_CONFIGURATION + r&quot;_\w{3}_(\d{8}_[^_]+)_([^_]+)&quot;, os.listdir(LATEST_BINARY_FOLDER_DIANA)[0])
+  
+
+  # test if the rev is matched
+  if fw_rev not in _info.group(2):
+    logging.warning(&apos;The fw rev is not matched with the bin file&apos;)
+    raise
+
+  _dir = os.path.join(to_path, fw_rev + &apos;_&apos; + _info.group(1))
+  logging.info(_dir)
+
+  # get the firmware info in the name of a file in the binary folder
+  # using the regex to extract the captured group 1 = time stamp, group 2 = firmware name
+  logging.info(&apos;collect_file_debug&apos;)
+  logging.info(&apos;LATEST_BINARY_FOLDER_DIANA-&gt;&gt;&apos; + os.listdir(LATEST_BINARY_FOLDER_DIANA)[0])
+  fw_rev_ota = os.listdir(LATEST_BINARY_FOLDER_DIANA)[0]
+  logging.info(&apos;fw_rev_ota-&gt;&gt;&apos; + fw_rev_ota)
+  logging.info(&apos;_info-&gt;&gt;&apos; + _info.group(2))
+  # test if the rev is matched
+  if fw_rev not in _info.group(2):
+    logging.warning(&apos;The fw rev is not matched with the bin file&apos;)
+    raise
+  _dir = os.path.join(to_path, fw_rev + &apos;_&apos; + _info.group(1))
+  logging.info(&apos;_dir-&gt;&gt;&apos; + _dir)
+  logging.info(LATEST_BINARY_FOLDER_DIANA)
+  _file = os.path.join(LATEST_BINARY_FOLDER_DIANA, fw_rev_ota)
+  logging.info(_file)
+  if os.path.exists(_dir): shutil.rmtree(_dir)
+  shutil.copytree(LATEST_BINARY_FOLDER_DIANA, _dir)
+  logging.info(_file)
+  logging.info(TARGET_FOLDER_DIANA)
+  shutil.copy(_file, TARGET_FOLDER_DIANA)
+  #shutil.copy(_file, REPO_VAL) # Copy firmware to val_automation repo to commit
+  return {&apos;timestamp&apos; : _info.group(1), &apos;dir&apos; : _dir}
+
+
+######################################################################
+if __name__==&apos;__main__&apos;:
+##log build    
+## collect file to special folders 
+  file_to_open = open(&apos;./ble_fw.txt&apos;,&apos;r&apos;)
+  ble_firmware_version = file_to_open.read()
+  file_to_open.close()
+##  ble_firmware_version = os.environ[&quot;READ_BLE_FW_VER&quot;]
+  collect_file_diana(ble_firmware_version)
+  exit(0) # module has executed successfully
+</command>
+    </hudson.plugins.python.Python>
+    <org.jenkinsci.plugins.ParameterizedRemoteTrigger.RemoteBuildConfiguration plugin="Parameterized-Remote-Trigger@3.0.7">
+      <remoteJenkinsName>remote_jenkins_raspi</remoteJenkinsName>
+      <auth2 class="org.jenkinsci.plugins.ParameterizedRemoteTrigger.auth2.CredentialsAuth">
+        <credentials>0cc575c2-57cf-4b9a-a374-cdc4971e2a65</credentials>
+      </auth2>
+      <shouldNotFailBuild>false</shouldNotFailBuild>
+      <preventRemoteBuildQueue>true</preventRemoteBuildQueue>
+      <pollInterval>10</pollInterval>
+      <blockBuildUntilComplete>false</blockBuildUntilComplete>
+      <job>http://10.166.1.80:8080/job/OTA_UP_DOWN_WITH_LATEST_FW/</job>
+      <token></token>
+      <parameters></parameters>
+      <enhancedLogging>false</enhancedLogging>
+      <loadParamsFromFile>false</loadParamsFromFile>
+      <parameterFile></parameterFile>
+      <maxConn>1</maxConn>
+      <useCrumbCache>true</useCrumbCache>
+      <useJobInfoCache>true</useJobInfoCache>
+      <abortTriggeredJob>true</abortTriggeredJob>
+      <disabled>false</disabled>
+      <hostLocks/>
+      <hostPermits/>
+    </org.jenkinsci.plugins.ParameterizedRemoteTrigger.RemoteBuildConfiguration>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>build.json</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>false</onlyIfSuccessful>
+      <fingerprint>false</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
+    </hudson.tasks.ArtifactArchiver>
+    <jenkins.plugins.slack.SlackNotifier plugin="slack@2.12">
+      <teamDomain></teamDomain>
+      <tokenCredentialId></tokenCredentialId>
+      <botUser>false</botUser>
+      <room>#fw_validation_auto</room>
+      <startNotification>true</startNotification>
+      <notifySuccess>true</notifySuccess>
+      <notifyAborted>true</notifyAborted>
+      <notifyNotBuilt>true</notifyNotBuilt>
+      <notifyUnstable>true</notifyUnstable>
+      <notifyRegression>true</notifyRegression>
+      <notifyFailure>true</notifyFailure>
+      <notifyBackToNormal>true</notifyBackToNormal>
+      <notifyRepeatedFailure>false</notifyRepeatedFailure>
+      <includeTestSummary>false</includeTestSummary>
+      <includeFailedTests>false</includeFailedTests>
+      <commitInfoChoice>NONE</commitInfoChoice>
+      <includeCustomMessage>true</includeCustomMessage>
+      <customMessage></customMessage>
+      <customMessageSuccess></customMessageSuccess>
+      <customMessageAborted></customMessageAborted>
+      <customMessageNotBuilt></customMessageNotBuilt>
+      <customMessageUnstable></customMessageUnstable>
+      <customMessageFailure></customMessageFailure>
+    </jenkins.plugins.slack.SlackNotifier>
+  </publishers>
+  <buildWrappers/>
+</project>
